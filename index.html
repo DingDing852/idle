@@ -9,7 +9,7 @@
             --bg-color: #1a1c23;
             --panel-bg: #242731;
             --panel-border: #383c4a;
-            --text-color: #e0e6ed;e
+            --text-color: #e0e6ed;
             --accent-color: #4ec9b0;
             --gold-color: #ffd700;
         }
@@ -93,6 +93,7 @@
             border-radius: 8px;
             overflow: hidden;
             border: 2px solid var(--panel-border);
+            cursor: pointer;
         }
 
         canvas {
@@ -223,7 +224,7 @@
 </head>
 <body>
 
-    <!-- 摸魚偽裝畫面 (按 ESC 切換) -->
+    <!-- 摸魚偽裝畫面 (ESC 鍵切換) -->
     <div id="excelDisguise">
         <div class="excel-ribbon">
             <span>Microsoft Excel - 2026_Q4_Financial_Report.xlsx</span>
@@ -256,11 +257,11 @@
     <div id="app">
         <div id="gamePanel">
             <div class="boss-hint">按 <b>[ESC]</b> 鍵瞬間切換至 Excel 財務報表</div>
-            <div id="canvasContainer">
+            <div id="canvasContainer" onclick="handlePoolClick(event)">
                 <canvas id="gameCanvas" width="600" height="400"></canvas>
             </div>
-            <div style="margin-top: 15px;">
-                <button class="btn" onclick="manualCast()">手動甩竿 / 加速收線</button>
+            <div style="margin-top: 15px; color: #aaa; font-size: 14px;">
+                點擊畫面中央的池塘來釣魚！
             </div>
         </div>
 
@@ -353,8 +354,8 @@
         };
 
         let isBossMode = false;
-        let bobberY = 240;
-        let bobberTargetY = 240;
+        let animatedFishes = []; // 儲存彈跳魚的動畫陣列
+        let ripples = [];         // 水波紋特效
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -379,7 +380,7 @@
             }
         });
 
-        // --- 動畫繪製 ---
+        // --- 繪製畫布 ---
         function gameLoop() {
             drawScene();
             requestAnimationFrame(gameLoop);
@@ -388,60 +389,103 @@
         function drawScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 天空
-            ctx.fillStyle = state.currentLoc === 2 ? '#050510' : '#70d6ff';
-            ctx.fillRect(0, 0, canvas.width, 180);
+            // 背景草地 / 地面
+            ctx.fillStyle = state.currentLoc === 2 ? '#0b0d17' : '#2b4c2b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 水面
-            ctx.fillStyle = state.currentLoc === 2 ? '#0a1128' : '#0077b6';
-            ctx.fillRect(0, 180, canvas.width, 220);
+            // 中央小池塘外圍石塊石徑
+            const poolX = canvas.width / 2;
+            const poolY = canvas.height / 2;
+            const radiusX = 140;
+            const radiusY = 90;
 
-            // 小船
-            ctx.fillStyle = '#8d5b4c';
-            ctx.fillRect(30, 150, 80, 40);
-
-            // 小人
-            ctx.fillStyle = '#ffb703';
-            ctx.fillRect(50, 130, 15, 20);
-
-            // 釣竿
-            ctx.strokeStyle = '#d4a373';
-            ctx.lineWidth = 3;
+            ctx.fillStyle = '#6c757d';
             ctx.beginPath();
-            ctx.moveTo(60, 135);
-            ctx.lineTo(140, 110);
-            ctx.stroke();
-
-            // 釣魚線
-            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(140, 110);
-            ctx.lineTo(140, bobberY);
-            ctx.stroke();
-
-            // 浮標
-            ctx.fillStyle = '#e63946';
-            ctx.beginPath();
-            ctx.arc(140, bobberY, 5, 0, Math.PI * 2);
+            ctx.ellipse(poolX, poolY, radiusX + 12, radiusY + 12, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // 浮標平滑移動
-            bobberY += (bobberTargetY - bobberY) * 0.1;
+            // 水池本體
+            ctx.fillStyle = state.currentLoc === 2 ? '#0d1b2a' : '#1b263b';
+            ctx.beginPath();
+            ctx.ellipse(poolX, poolY, radiusX, radiusY, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = state.currentLoc === 2 ? '#1b263b' : '#415a77';
+            ctx.beginPath();
+            ctx.ellipse(poolX, poolY, radiusX - 10, radiusY - 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 繪製水波紋效果
+            ripples.forEach((r, i) => {
+                ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(r.x, r.y, r.rX, r.rY, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
+                r.rX += 1.5;
+                r.rY += 1;
+                r.alpha -= 0.03;
+
+                if (r.alpha <= 0) ripples.splice(i, 1);
+            });
+
+            // 繪製點擊後從池塘彈出的魚
+            animatedFishes.forEach((f, i) => {
+                ctx.save();
+                ctx.translate(f.x, f.y);
+                
+                // 像素風格簡易小魚繪製
+                ctx.fillStyle = f.color;
+                ctx.fillRect(-15, -8, 30, 16); // 魚身
+                ctx.beginPath();
+                ctx.moveTo(-15, 0);
+                ctx.lineTo(-25, -10);
+                ctx.lineTo(-25, 10);
+                ctx.closePath();
+                ctx.fill(); // 尾巴
+
+                // 魚眼睛
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(5, -5, 5, 5);
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(7, -3, 2, 2);
+
+                // 文字說明
+                ctx.fillStyle = '#ffd700';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(`+${f.name}`, -20, -15);
+
+                ctx.restore();
+
+                // 更新彈跳物理效果
+                f.x += f.vx;
+                f.y += f.vy;
+                f.vy += 0.4; // 重力效果
+                f.alpha -= 0.02;
+
+                if (f.alpha <= 0 || f.y > canvas.height) {
+                    animatedFishes.splice(i, 1);
+                }
+            });
         }
 
-        // --- 釣魚邏輯 ---
-        function manualCast() {
-            bobberTargetY = 270;
+        // --- 池塘點擊事件 ---
+        function handlePoolClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
 
-            setTimeout(() => {
-                bobberTargetY = 240;
-                catchFish();
-            }, 700);
+            // 觸發水波紋
+            ripples.push({ x: clickX, y: clickY, rX: 5, rY: 3, alpha: 1 });
+
+            // 進行釣魚
+            catchFish(clickX, clickY);
         }
 
-        function catchFish() {
+        function catchFish(spawnX, spawnY) {
             if (state.inventory.length >= 15) {
+                alert('水桶滿了！請先出售或將魚放進水族箱！');
                 return;
             }
 
@@ -452,6 +496,17 @@
             if (!state.fishdex.includes(caught.id)) {
                 state.fishdex.push(caught.id);
             }
+
+            // 產生彈跳魚動畫
+            animatedFishes.push({
+                name: caught.name,
+                color: caught.color,
+                x: spawnX || canvas.width / 2,
+                y: spawnY || canvas.height / 2,
+                vx: (Math.random() - 0.5) * 4,
+                vy: -8 - Math.random() * 4,
+                alpha: 1
+            });
 
             updateUI();
             renderFishdex();
@@ -465,7 +520,7 @@
 
             // 自動釣魚
             if (state.autoBaitLevel > 0 && Math.random() < state.autoBaitLevel * 0.3) {
-                catchFish();
+                catchFish(canvas.width / 2, canvas.height / 2);
             }
 
             updateUI();
