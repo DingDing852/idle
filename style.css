@@ -1,10 +1,28 @@
-:root {
+/* 明暗模式主題變數 */
+body.dark-mode {
     --bg-color: #0f1117;
     --panel-bg: #181b23;
     --panel-border: #2a2e3d;
     --text-color: #e2e8f0;
+    --sub-text: #64748b;
+    --card-bg: #11131a;
+    --card-border: #232736;
     --accent-color: #38bdf8;
     --gold-color: #fbbf24;
+    --canvas-bg: #090a0f;
+}
+
+body.light-mode {
+    --bg-color: #f8fafc;
+    --panel-bg: #ffffff;
+    --panel-border: #e2e8f0;
+    --text-color: #0f172a;
+    --sub-text: #94a3b8;
+    --card-bg: #f1f5f9;
+    --card-border: #cbd5e1;
+    --accent-color: #0284c7;
+    --gold-color: #d97706;
+    --canvas-bg: #e2e8f0;
 }
 
 * {
@@ -21,6 +39,7 @@ body {
     display: flex;
     height: 100vh;
     overflow: hidden;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 /* Excel 偽裝模式 */
@@ -75,8 +94,9 @@ body {
 #gamePanel {
     flex: 1;
     height: 100%;
-    background: #090a0f;
+    background: var(--canvas-bg);
     position: relative;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #canvasContainer {
@@ -91,7 +111,7 @@ canvas {
     height: 100%;
 }
 
-/* 可收折側邊欄 (Collapsible SidePanel) */
+/* 側邊欄 */
 #sidePanel {
     position: absolute;
     right: 0;
@@ -137,18 +157,41 @@ canvas {
     height: 100%;
 }
 
+/* 頂部功能按鈕列 */
+.top-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 14px 4px 14px;
+}
+
+.icon-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.icon-btn:hover {
+    border-color: var(--accent-color);
+}
+
 .tabs {
     display: flex;
-    background: #11131a;
+    background: var(--card-bg);
     border-bottom: 1px solid var(--panel-border);
 }
 
 .tab-btn {
     flex: 1;
-    padding: 14px 4px;
+    padding: 12px 4px;
     background: none;
     border: none;
-    color: #64748b;
+    color: var(--sub-text);
     cursor: pointer;
     font-weight: 600;
     font-size: 13px;
@@ -172,12 +215,16 @@ canvas {
     display: block;
 }
 
+.sub-text {
+    color: var(--sub-text);
+}
+
 .stat-card {
-    background: #11131a;
+    background: var(--card-bg);
     padding: 12px;
     border-radius: 8px;
     margin-bottom: 10px;
-    border: 1px solid #232736;
+    border: 1px solid var(--card-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -185,7 +232,7 @@ canvas {
 
 .btn {
     background: var(--accent-color);
-    color: #0f1117;
+    color: #ffffff;
     border: none;
     padding: 8px 14px;
     border-radius: 6px;
@@ -203,6 +250,10 @@ canvas {
     font-size: 12px;
 }
 
+.btn-danger {
+    background: #ef4444 !important;
+}
+
 .item-list {
     display: flex;
     flex-direction: column;
@@ -210,8 +261,8 @@ canvas {
 }
 
 .item-card {
-    background: #11131a;
-    border: 1px solid #232736;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     padding: 10px;
     border-radius: 6px;
     display: flex;
@@ -226,8 +277,8 @@ canvas {
 }
 
 .fish-card {
-    background: #11131a;
-    border: 1px solid #232736;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 6px;
     padding: 8px 4px;
     text-align: center;
@@ -243,13 +294,51 @@ canvas {
     position: absolute;
     top: 16px;
     left: 16px;
-    background: rgba(15, 17, 23, 0.8);
+    background: rgba(15, 17, 23, 0.7);
     border: 1px solid var(--panel-border);
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 12px;
-    color: #94a3b8;
+    color: #e2e8f0;
     backdrop-filter: blur(4px);
     pointer-events: none;
     z-index: 10;
+}
+
+/* Modal 彈出視窗 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    padding: 20px;
+    border-radius: 12px;
+    width: 320px;
+    color: var(--text-color);
+}
+
+.setting-item {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.setting-item select {
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--card-border);
+    padding: 4px 8px;
+    border-radius: 4px;
 }
