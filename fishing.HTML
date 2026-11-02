@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q4_Financial_Report_2026.xlsx</title>
+    <style>
+        :root {
+            --bg-color: #1a1c23;
+            --panel-bg: #242731;
+            --panel-border: #383c4a;
+            --text-color: #e0e6ed;
+            --accent-color: #4ec9b0;
+            --gold-color: #ffd700;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Microsoft JhengHei, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 摸魚 Boss Key 偽裝模式 (Excel) */
+        #excelDisguise {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #ffffff;
+            color: #000000;
+            z-index: 99999;
+            font-family: Arial, Microsoft JhengHei, sans-serif;
+            font-size: 12px;
+        }
+
+        .excel-ribbon {
+            background: #107c41;
+            color: white;
+            padding: 8px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .excel-table th, .excel-table td {
+            border: 1px solid #d4d4d4;
+            padding: 6px 10px;
+            text-align: left;
+        }
+
+        .excel-table th {
+            background: #f3f3f3;
+        }
+
+        /* 主介面佈局 */
+        #app {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        #gamePanel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0f1115;
+            position: relative;
+        }
+
+        #canvasContainer {
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--panel-border);
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        #sidePanel {
+            width: 400px;
+            background: var(--panel-bg);
+            border-left: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs {
+            display: flex;
+            background: #1a1c23;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 6px;
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
+            background: var(--panel-bg);
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stat-card {
+            background: #1a1c23;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            background: var(--accent-color);
+            color: #1a1c23;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .item-card {
+            background: #1a1c23;
+            border: 1px solid var(--panel-border);
+            padding: 10px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fish-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .fish-card {
+            background: #1a1c23;
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .fish-card.locked {
+            opacity: 0.3;
+            filter: grayscale(1);
+        }
+
+        .boss-hint {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 摸魚偽裝畫面 (按 ESC 切換) -->
+    <div id="excelDisguise">
+        <div class="excel-ribbon">
+            <span>Microsoft Excel - 2026_Q4_Financial_Report.xlsx</span>
+            <span>[摸魚防衛模式中 - 按 ESC 鍵返回遊戲]</span>
+        </div>
+        <div style="padding: 20px;">
+            <h2>2026 年第四季度營運成本與綠色科技項目預算分析表</h2>
+            <table class="excel-table">
+                <thead>
+                    <tr>
+                        <th>項目編號</th>
+                        <th>部門名稱</th>
+                        <th>年度預算 (HKD)</th>
+                        <th>實際支出 (HKD)</th>
+                        <th>執行進度</th>
+                        <th>審核狀態</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>DEPT-101</td><td>資訊科技與自動化發展部</td><td>$185,000</td><td>$182,300</td><td>98.5%</td><td>已核可</td></tr>
+                    <tr><td>DEPT-102</td><td>環境與可持續發展推廣組</td><td>$320,000</td><td>$315,500</td><td>98.6%</td><td>審核中</td></tr>
+                    <tr><td>DEPT-103</td><td>雲端運算與伺服器運作成本</td><td>$125,000</td><td>$128,200</td><td>102.5%</td><td>觀察中</td></tr>
+                    <tr><td>DEPT-104</td><td>行政與辦公室雜項支出</td><td>$45,000</td><td>$41,100</td><td>91.3%</td><td>正常</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 遊戲主體 -->
+    <div id="app">
+        <div id="gamePanel">
+            <div class="boss-hint">按 <b>[ESC]</b> 鍵瞬間切換至 Excel 財務報表</div>
+            <div id="canvasContainer">
+                <canvas id="gameCanvas" width="600" height="400"></canvas>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="btn" onclick="manualCast()">手動甩竿 / 加速收線</button>
+            </div>
+        </div>
+
+        <div id="sidePanel">
+            <!-- 頂部分頁選單 -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('inventory')">水桶背包</button>
+                <button class="tab-btn" onclick="switchTab('aquarium')">水族箱</button>
+                <button class="tab-btn" onclick="switchTab('upgrades')">升級/漁場</button>
+                <button class="tab-btn" onclick="switchTab('fishdex')">魚類圖鑑</button>
+            </div>
+
+            <!-- 水桶分頁 -->
+            <div id="tab-inventory" class="tab-content active">
+                <div class="stat-card">
+                    <div>
+                        <div style="font-size: 12px; color: #aaa;">金幣餘額</div>
+                        <div style="font-size: 22px; font-weight: bold; color: var(--gold-color);" id="goldCount">$0</div>
+                    </div>
+                    <button class="btn" onclick="sellAllFish()">一鍵出售所有魚</button>
+                </div>
+                <div class="stat-card">
+                    <div>水族箱被動收益: <span id="passiveGps" style="color: var(--accent-color);">$0</span>/秒</div>
+                </div>
+                <h3>目前水桶 (容量 <span id="bucketSize">0/15</span>)</h3>
+                <div id="inventoryList" class="item-list"></div>
+            </div>
+
+            <!-- 水族箱分頁 -->
+            <div id="tab-aquarium" class="tab-content">
+                <h3>辦公室水族箱 (觀賞加成)</h3>
+                <p style="font-size: 12px; color: #aaa;">放入水族箱的魚不會被賣掉，並且每秒持續提供被動金幣！</p>
+                <div id="aquariumList" class="item-list"></div>
+            </div>
+
+            <!-- 升級與漁場分頁 -->
+            <div id="tab-upgrades" class="tab-content">
+                <h3>裝備升級</h3>
+                <div id="upgradeList" class="item-list"></div>
+                
+                <h3 style="margin-top: 20px;">解鎖與切換漁場</h3>
+                <div id="locationList" class="item-list"></div>
+            </div>
+
+            <!-- 圖鑑分頁 -->
+            <div id="tab-fishdex" class="tab-content">
+                <h3>魚類圖鑑 (Fishdex)</h3>
+                <div id="fishdexGrid" class="fish-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 魚種資料庫 ---
+        const FISH_DATA = [
+            // 漁場 1: 公司後花園池塘
+            { id: 'tilapia', name: '吳郭魚', rarity: '普通', price: 10, gps: 0.5, loc: 0, color: '#8d99ae' },
+            { id: 'shoe', name: '沉底舊鞋子', rarity: '垃圾', price: 2, gps: 0.1, loc: 0, color: '#6c584c' },
+            { id: 'coffee', name: '主管掉的空咖啡杯', rarity: '搞笑', price: 25, gps: 1.2, loc: 0, color: '#d62828' },
+            { id: 'carp', name: '草魚', rarity: '普通', price: 18, gps: 0.8, loc: 0, color: '#52b788' },
+
+            // 漁場 2: 近海觀光碼頭
+            { id: 'salmon', name: '野生鮭魚', rarity: '稀有', price: 60, gps: 3.5, loc: 1, color: '#f77f00' },
+            { id: 'goldfish', name: '黃金鯉魚', rarity: '史詩', price: 150, gps: 10.0, loc: 1, color: '#ffd700' },
+            { id: 'pikachu_fish', name: '皮卡丘電電魚', rarity: '搞笑', price: 220, gps: 15.0, loc: 1, color: '#ffee32' },
+
+            // 漁場 3: 漆黑深海溝
+            { id: 'angler', name: '深海提燈魚', rarity: '稀有', price: 300, gps: 22.0, loc: 2, color: '#480ca8' },
+            { id: 'shark', name: '大白鯊', rarity: '史詩', price: 800, gps: 60.0, loc: 2, color: '#4361ee' },
+            { id: 'liver', name: '過勞工程師的肝臟', rarity: '傳奇彩蛋', price: 2000, gps: 150.0, loc: 2, color: '#7209b7' },
+            { id: 'cthulhu', name: '幼年克蘇魯', rarity: '神話', price: 5000, gps: 400.0, loc: 2, color: '#38b000' }
+        ];
+
+        const LOCATIONS = [
+            { name: '🏞️ 公司後花園池塘', cost: 0 },
+            { name: '⛵ 近海觀光碼頭', cost: 500 },
+            { name: '🐙 漆黑深海溝', cost: 3000 }
+        ];
+
+        // 遊戲狀態
+        let state = {
+            gold: 0,
+            currentLoc: 0,
+            unlockedLocs: [0],
+            inventory: [],
+            aquarium: [],
+            fishdex: [],
+            rodLevel: 1,
+            autoBaitLevel: 0
+        };
+
+        let isBossMode = false;
+        let bobberY = 240;
+        let bobberTargetY = 240;
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function init() {
+            loadSave();
+            renderUpgrades();
+            renderLocations();
+            renderFishdex();
+            updateUI();
+            gameLoop();
+
+            setInterval(secondTick, 1000);
+            setInterval(autoSave, 5000);
+        }
+
+        // --- Boss Key 監聽 (ESC) ---
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                isBossMode = !isBossMode;
+                document.getElementById('excelDisguise').style.display = isBossMode ? 'block' : 'none';
+            }
+        });
+
+        // --- 動畫繪製 ---
+        function gameLoop() {
+            drawScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 天空
+            ctx.fillStyle = state.currentLoc === 2 ? '#050510' : '#70d6ff';
+            ctx.fillRect(0, 0, canvas.width, 180);
+
+            // 水面
+            ctx.fillStyle = state.currentLoc === 2 ? '#0a1128' : '#0077b6';
+            ctx.fillRect(0, 180, canvas.width, 220);
+
+            // 小船
+            ctx.fillStyle = '#8d5b4c';
+            ctx.fillRect(30, 150, 80, 40);
+
+            // 小人
+            ctx.fillStyle = '#ffb703';
+            ctx.fillRect(50, 130, 15, 20);
+
+            // 釣竿
+            ctx.strokeStyle = '#d4a373';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(60, 135);
+            ctx.lineTo(140, 110);
+            ctx.stroke();
+
+            // 釣魚線
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(140, 110);
+            ctx.lineTo(140, bobberY);
+            ctx.stroke();
+
+            // 浮標
+            ctx.fillStyle = '#e63946';
+            ctx.beginPath();
+            ctx.arc(140, bobberY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 浮標平滑移動
+            bobberY += (bobberTargetY - bobberY) * 0.1;
+        }
+
+        // --- 釣魚邏輯 ---
+        function manualCast() {
+            bobberTargetY = 270;
+
+            setTimeout(() => {
+                bobberTargetY = 240;
+                catchFish();
+            }, 700);
+        }
+
+        function catchFish() {
+            if (state.inventory.length >= 15) {
+                return;
+            }
+
+            const availableFish = FISH_DATA.filter(f => f.loc === state.currentLoc);
+            const caught = availableFish[Math.floor(Math.random() * availableFish.length)];
+
+            state.inventory.push(caught);
+            if (!state.fishdex.includes(caught.id)) {
+                state.fishdex.push(caught.id);
+            }
+
+            updateUI();
+            renderFishdex();
+        }
+
+        function secondTick() {
+            // 水族箱收益
+            let passiveGold = 0;
+            state.aquarium.forEach(fish => passiveGold += fish.gps);
+            state.gold += passiveGold;
+
+            // 自動釣魚
+            if (state.autoBaitLevel > 0 && Math.random() < state.autoBaitLevel * 0.3) {
+                catchFish();
+            }
+
+            updateUI();
+        }
+
+        // --- UI 渲染與操作 ---
+        function sellAllFish() {
+            let total = 0;
+            state.inventory.forEach(fish => total += fish.price);
+            state.gold += total;
+            state.inventory = [];
+            updateUI();
+        }
+
+        function moveToAquarium(index) {
+            if (state.aquarium.length >= 10) {
+                alert('水族箱容量已滿 (上限 10 條)！');
+                return;
+            }
+            const fish = state.inventory.splice(index, 1)[0];
+            state.aquarium.push(fish);
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('goldCount').innerText = `$${Math.floor(state.gold)}`;
+            document.getElementById('bucketSize').innerText = `${state.inventory.length}/15`;
+
+            let passiveGps = state.aquarium.reduce((sum, f) => sum + f.gps, 0);
+            document.getElementById('passiveGps').innerText = `$${passiveGps.toFixed(1)}`;
+
+            const invList = document.getElementById('inventoryList');
+            invList.innerHTML = '';
+            state.inventory.forEach((fish, i) => {
+                invList.innerHTML += `
+                    <div class="item-card">
+                        <div>
+                            <b style="color:${fish.color}">${fish.name}</b> 
+                            <span style="font-size:11px; color:#aaa;">(${fish.rarity})</span>
+                            <div style="font-size:12px;">價值: $${fish.price} | 被動: +$${fish.gps}/s</div>
+                        </div>
+                        <button class="btn btn-small" onclick="moveToAquarium(${i})">移至水族箱</button>
+                    </div>
+                `;
+            });
+
+            const aquaList = document.getElementById('aquariumList');
+            aquaList.innerHTML = '';
+            state.aquarium.forEach((fish) => {
+                aquaList.innerHTML += `
+                    <div class="item-card">
+                        <div>
+                            <b style="color:${fish.color}">${fish.name}</b>
+                            <div style="font-size:12px; color:var(--accent-color);">被動收益: +$${fish.gps}/s</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+
+        function renderUpgrades() {
+            const container = document.getElementById('upgradeList');
+            container.innerHTML = `
+                <div class="item-card">
+                    <div>
+                        <b>強化釣竿 (Lv.${state.rodLevel})</b>
+                        <div style="font-size:12px; color:#aaa;">提升高級魚種機率</div>
+                    </div>
+                    <button class="btn btn-small" onclick="buyRod()">升級 ($${state.rodLevel * 100})</button>
+                </div>
+                <div class="item-card">
+                    <div>
+                        <b>自動誘餌噴霧 (Lv.${state.autoBaitLevel})</b>
+                        <div style="font-size:12px; color:#aaa;">自動吸引魚類上鉤</div>
+                    </div>
+                    <button class="btn btn-small" onclick="buyBait()">升級 ($${(state.autoBaitLevel + 1) * 250})</button>
+                </div>
+            `;
+        }
+
+        function buyRod() {
+            let cost = state.rodLevel * 100;
+            if (state.gold >= cost) {
+                state.gold -= cost;
+                state.rodLevel++;
+                renderUpgrades();
+                updateUI();
+            }
+        }
+
+        function buyBait() {
+            let cost = (state.autoBaitLevel + 1) * 250;
+            if (state.gold >= cost) {
+                state.gold -= cost;
+                state.autoBaitLevel++;
+                renderUpgrades();
+                updateUI();
+            }
+        }
+
+        function renderLocations() {
+            const container = document.getElementById('locationList');
+            container.innerHTML = '';
+            LOCATIONS.forEach((loc, i) => {
+                const isUnlocked = state.unlockedLocs.includes(i);
+                container.innerHTML += `
+                    <div class="item-card">
+                        <div>
+                            <b>${loc.name}</b>
+                            <div style="font-size:12px; color:#aaa;">${isUnlocked ? '已解鎖' : `費用: $${loc.cost}`}</div>
+                        </div>
+                        ${isUnlocked ? 
+                            `<button class="btn btn-small" onclick="selectLoc(${i})">${state.currentLoc === i ? '目前位置' : '前往'}</button>` :
+                            `<button class="btn btn-small" onclick="unlockLoc(${i})">解鎖地圖</button>`
+                        }
+                    </div>
+                `;
+            });
+        }
+
+        function unlockLoc(index) {
+            let cost = LOCATIONS[index].cost;
+            if (state.gold >= cost) {
+                state.gold -= cost;
+                state.unlockedLocs.push(index);
+                state.currentLoc = index;
+                renderLocations();
+                updateUI();
+            }
+        }
+
+        function selectLoc(index) {
+            state.currentLoc = index;
+            renderLocations();
+        }
+
+        function renderFishdex() {
+            const grid = document.getElementById('fishdexGrid');
+            grid.innerHTML = '';
+            FISH_DATA.forEach(fish => {
+                const isDiscovered = state.fishdex.includes(fish.id);
+                grid.innerHTML += `
+                    <div class="fish-card ${isDiscovered ? '' : 'locked'}">
+                        <div style="font-size:20px;">${isDiscovered ? '🐟' : '❓'}</div>
+                        <b>${isDiscovered ? fish.name : '未知魚種'}</b>
+                        <div style="font-size:10px; color:#aaa;">${isDiscovered ? fish.rarity : '未解鎖'}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // 本地自動存檔
+        function autoSave() {
+            localStorage.setItem('pixel_fishing_save', JSON.stringify(state));
+        }
+
+        function loadSave() {
+            const save = localStorage.getItem('pixel_fishing_save');
+            if (save) {
+                try {
+                    state = Object.assign(state, JSON.parse(save));
+                } catch(e) {}
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
